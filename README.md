@@ -457,7 +457,7 @@ H5 仅作为快速预览：
 npm run dev:h5      # 默认 5174，走 Vite 代理
 ```
 
-手机 App 没有 Vite 代理，必须用 `VITE_API_BASE_URL` 指向电脑局域网 IP 或线上域名；H5 调试可留空。详见 [frontend/note-app/README.md](frontend/note-app/README.md)。
+手机 App 默认使用 `https://frp-box.com:64456`；如需覆盖，用 `VITE_API_BASE_URL` 指向其他地址。H5 调试可留空，走本地 Vite 代理。详见 [frontend/note-app/README.md](frontend/note-app/README.md)。
 
 ### 启动后端
 

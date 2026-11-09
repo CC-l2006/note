@@ -25,29 +25,25 @@
 
 ## 手机端运行（主方式）
 
-### 1. 启动后端
+### 1. 后端地址
 
-后端仍是 8084。手机和电脑要在同一个局域网，确保防火墙放行 8084。
+默认直接使用已部署的公网后端：
 
-```powershell
-cd server
-java -jar target\cipherws-note-0.0.1-SNAPSHOT.jar
+```text
+https://frp-box.com:64456
 ```
 
-### 2. 配置后端地址
+请求路径仍然是 `/api/...`，Nginx 会去掉 `/api` 前缀后转给后端。
 
-手机 App 没有 Vite 代理，必须告诉它后端在哪里。复制 `.env.example` 为 `.env.local`：
+不需要本机再启动后端；只有本地二次开发时才需要起 8084。
+
+### 2. 配置（可选）
+
+默认已经使用 `https://frp-box.com:64456`。如需覆盖，复制 `.env.example` 为 `.env.local`：
 
 ```ini
-# 改成电脑的局域网 IP，例如 192.168.1.20
-VITE_API_BASE_URL=http://192.168.1.20:8084
+VITE_API_BASE_URL=https://frp-box.com:64456
 ```
-
-不配置时会走默认值：
-
-- Android 模拟器：`http://10.0.2.2:8084`
-- iOS 模拟器：`http://127.0.0.1:8084`
-- 真机：必须手动配置局域网 IP
 
 ### 3. 编译 App 资源
 
@@ -70,6 +66,18 @@ uni-app 的 **APK / IPA 原生打包需要 HBuilderX**（云打包或本地打�
 2. 或把 `dist/build/app` 导入 HBuilderX，按 HBuilderX 的 App 打包流程生成 APK/IPA。
 
 > 如果你希望我继续把 HBuilderX 的 `manifest.json` 打包参数（应用图标、启动图、Android 权限、iOS 证书）也配好，可以下一步继续。
+
+### 关于 HTTPS 证书
+
+`frp-box.com:64456` 当前证书不在系统信任链里。Android 开发包可以临时设置：
+
+```ini
+VITE_SSL_VERIFY=false
+```
+
+让 `uni.request` 跳过证书校验（仅 App-Android 生效，且仅建议开发阶段使用）。
+
+iOS 仍会校验证书，需要给 frp 换一张受信任的 HTTPS 证书，或使用带正式证书的域名。
 
 ## 图标
 
@@ -100,9 +108,11 @@ npm run dev:mp-weixin
 ## 环境变量
 
 ```ini
-# 手机 App：电脑局域网 IP 或线上域名
-# H5 调试：可留空
-VITE_API_BASE_URL=
+# 默认公网后端
+VITE_API_BASE_URL=https://frp-box.com:64456
+
+# 仅 App-Android；开发阶段可跳过不受信任证书
+VITE_SSL_VERIFY=true
 ```
 
 ## 目录
@@ -132,10 +142,9 @@ note-app/
 
 ## 手机端注意事项
 
-- **真机必须配 `VITE_API_BASE_URL`**，不能用 `localhost`（那是手机自己）。
-- Android 模拟器用 `10.0.2.2`，iOS 模拟器用 `127.0.0.1`。
-- 开发阶段用 HTTP 时，Android 可能需要在 HBuilderX 的 manifest 中允许明文流量；iOS 需要 ATS 例外。正式环境建议直接上 HTTPS。
-- 8084 只应在局域网/内网开放，不要直接暴露公网。
+- 默认后端是 `https://frp-box.com:64456`，请求路径为 `/api/...`。
+- 该地址当前证书不受系统信任：Android 开发包可设 `VITE_SSL_VERIFY=false`；iOS 需要受信任证书。
+- 正式环境建议给 frp 换正式 HTTPS 证书，不要长期关闭证书校验。
 - 后端目前没有专门给 App 的 OAuth/刷新 token，仍复用 Web 端 JWT。
 
 ## 与 Web 端的关系

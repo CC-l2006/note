@@ -5,7 +5,7 @@
  * 这样页面里只写 /auth/login、/notes 这类业务路径，不重复处理 baseURL、token 和错误。
  */
 
-import { API_BASE_URL } from '../config.js'
+import { API_BASE_URL, SSL_VERIFY } from '../config.js'
 
 const BASE = API_BASE_URL
 const API_PREFIX = '/api'
@@ -77,6 +77,8 @@ export function request(path, { method = 'GET', data, params } = {}) {
       data: method === 'GET' ? undefined : data,
       header,
       timeout: 60000,
+      // 仅 App-Android 生效；H5/小程序会忽略该参数
+      sslVerify: SSL_VERIFY,
       success: (res) => {
         try {
           resolve(parseResponse(res))
