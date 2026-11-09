@@ -66,7 +66,9 @@ function parseResponse(res) {
  */
 export function request(path, { method = 'GET', data, params } = {}) {
   const url = `${BASE}${API_PREFIX}${path}${buildQuery(params)}`
-  const header = { 'Content-Type': 'application/json' }
+  // uni.request 在部分 App 运行时对 Content-Type 大小写敏感；
+  // 统一小写 + 显式 JSON.stringify，避免把对象发成表单或 [object Object]。
+  const header = { 'content-type': 'application/json' }
   const token = getToken()
   if (token) header.Authorization = `Bearer ${token}`
 
@@ -74,7 +76,7 @@ export function request(path, { method = 'GET', data, params } = {}) {
     uni.request({
       url,
       method,
-      data: method === 'GET' ? undefined : data,
+      data: method === 'GET' ? undefined : JSON.stringify(data ?? {}),
       header,
       timeout: 60000,
       // 仅 App-Android 生效；H5/小程序会忽略该参数
