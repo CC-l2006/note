@@ -15,6 +15,41 @@
       "waiting": true,
       "autoclose": true,
       "delay": 0
+    },
+    "distribute": {
+      "icons": {
+        "android": {
+          "mdpi": "static/icons/48.png",
+          "hdpi": "static/icons/72.png",
+          "xhdpi": "static/icons/96.png",
+          "xxhdpi": "static/icons/144.png",
+          "xxxhdpi": "static/icons/192.png"
+        },
+        "ios": {
+          "appstore": "static/icons/1024.png",
+          "iphone": {
+            "app@2x": "static/icons/120.png",
+            "app@3x": "static/icons/180.png",
+            "spotlight@2x": "static/icons/80.png",
+            "spotlight@3x": "static/icons/120.png",
+            "settings@2x": "static/icons/58.png",
+            "settings@3x": "static/icons/87.png",
+            "notification@2x": "static/icons/40.png",
+            "notification@3x": "static/icons/60.png"
+          },
+          "ipad": {
+            "app": "static/icons/76.png",
+            "app@2x": "static/icons/152.png",
+            "proapp@2x": "static/icons/167.png",
+            "spotlight": "static/icons/40.png",
+            "spotlight@2x": "static/icons/80.png",
+            "settings": "static/icons/29.png",
+            "settings@2x": "static/icons/58.png",
+            "notification": "static/icons/20.png",
+            "notification@2x": "static/icons/40.png"
+          }
+        }
+      }
     }
   },
   "h5": {

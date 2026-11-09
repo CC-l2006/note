@@ -76,8 +76,10 @@ uni-app 的 **APK / IPA 原生打包需要 HBuilderX**（云打包或本地打�
 直接复用 Web 端 `frontend/note/public` 的品牌资源，不另做一套：
 
 - 登录页品牌图：`src/static/logo.png`
-- App 图标：`src/static/icon-180.png`（HBuilderX 打包时选它）
+- App 桌面图标：`src/static/icon-180.png` 生成到 `src/static/icons/`，已在 `manifest.json` 的 `app-plus.distribute.icons` 中配置 Android / iOS / iPad 各尺寸
 - TabBar：从 Web `favicon.ico` 生成的 `tab-notes*.png` / `tab-profile*.png`
+
+所以 App 的登录页、桌面图标和底部 Tab 用的都是 Web 端同一套品牌图标。
 
 ## 运行 H5（仅调试）
 
