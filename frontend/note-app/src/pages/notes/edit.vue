@@ -29,12 +29,7 @@
     />
 
     <view v-else class="preview-shell">
-      <!-- #ifdef H5 -->
-      <view class="md-preview" v-html="previewHtml"></view>
-      <!-- #endif -->
-      <!-- #ifndef H5 -->
-      <rich-text class="md-preview" :nodes="previewHtml"></rich-text>
-      <!-- #endif -->
+      <MdPreview :content="form.content" />
     </view>
 
     <!-- 标签 -->
@@ -69,7 +64,7 @@
     <view v-if="id" class="ai-box">
       <view>
         <text class="ai-title">AI 总结</text>
-        <text class="ai-desc">把长笔记压缩成一段摘要</text>
+        <text class="ai-desc">{{ aiDraft ? '已生成摘要，可编辑或替换正文' : '把长笔记压缩成一段摘要' }}</text>
       </view>
       <view class="ai-actions">
         <button class="ai-btn ghost-ai" @click="showHistory">历史</button>
@@ -79,6 +74,49 @@
 
     <button class="save-btn" :loading="saving" :disabled="saving" @click="save">保存笔记</button>
     <text class="footer">CipherWS Note · {{ id ? '编辑' : '新建' }}</text>
+
+    <!-- AI 摘要面板 -->
+    <view v-if="aiOpen" class="ai-mask" @click="closeAi">
+      <view class="ai-sheet" @click.stop>
+        <view class="ai-sheet-head">
+          <view>
+            <text class="ai-sheet-kicker">AI SUMMARY</text>
+            <text class="ai-sheet-title">AI 摘要</text>
+          </view>
+          <text class="ai-close" @click="closeAi">×</text>
+        </view>
+
+        <view class="ai-tabs">
+          <text class="ai-tab" :class="{ active: aiTab === 'preview' }" @click="aiTab = 'preview'">预览</text>
+          <text class="ai-tab" :class="{ active: aiTab === 'edit' }" @click="aiTab = 'edit'">编辑</text>
+        </view>
+
+        <scroll-view class="ai-sheet-body" scroll-y>
+          <MdPreview v-if="aiTab === 'preview'" :content="aiDraft" />
+          <textarea
+            v-else
+            v-model="aiDraft"
+            class="ai-textarea"
+            placeholder="摘要支持 Markdown，可直接编辑…"
+            placeholder-class="placeholder"
+            :maxlength="-1"
+          />
+
+          <view v-if="history.length" class="ai-history">
+            <text class="ai-history-title">历史摘要</text>
+            <view v-for="item in history" :key="item.id" class="history-item" @click="useHistory(item)">
+              <text class="history-time">{{ formatTime(item.createdAt) }}</text>
+              <text class="history-text">{{ item.summary }}</text>
+            </view>
+          </view>
+        </scroll-view>
+
+        <view class="ai-sheet-actions">
+          <button class="ghost" @click="closeAi">关闭</button>
+          <button class="primary" :disabled="!aiDraft" @click="replaceContent">替换正文</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -86,7 +124,7 @@
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { aiApi, folderApi, noteApi, tagApi } from '../../api/index.js'
-import { renderMarkdown } from '../../utils/markdown.js'
+import MdPreview from '../../components/MdPreview.vue'
 
 const id = ref(null)
 const tags = ref([])
@@ -96,9 +134,11 @@ const folderId = ref(null)
 const saving = ref(false)
 const aiLoading = ref(false)
 const mode = ref('edit')
+const aiOpen = ref(false)
+const aiTab = ref('preview')
+const aiDraft = ref('')
+const history = ref([])
 const form = reactive({ title: '', content: '' })
-
-const previewHtml = computed(() => renderMarkdown(form.content))
 
 const folderLabel = computed(() => {
   if (!folderId.value) return '未分类'
@@ -194,16 +234,22 @@ async function save() {
   }
 }
 
+function formatTime(value) {
+  if (!value) return ''
+  const d = new Date(value)
+  if (Number.isNaN(d.getTime())) return String(value).slice(0, 16)
+  const p = (n) => String(n).padStart(2, '0')
+  return `${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 async function summarize() {
   aiLoading.value = true
   try {
     const { data } = await aiApi.summarize(id.value)
-    uni.showModal({
-      title: 'AI 摘要',
-      content: data.summary || '没有返回摘要',
-      showCancel: false,
-      confirmText: '知道了'
-    })
+    aiDraft.value = data.summary || ''
+    aiTab.value = 'preview'
+    aiOpen.value = true
+    await loadHistory(true)
   } catch (error) {
     uni.showToast({ title: error.message || 'AI 总结失败', icon: 'none' })
   } finally {
@@ -211,23 +257,54 @@ async function summarize() {
   }
 }
 
-async function showHistory() {
+async function loadHistory(silent = false) {
   try {
     const { data } = await aiApi.history(id.value)
-    const records = Array.isArray(data) ? data : []
-    if (!records.length) {
+    history.value = Array.isArray(data) ? data : []
+    if (!aiDraft.value && history.value[0]) aiDraft.value = history.value[0].summary
+    if (!silent && !history.value.length) {
       uni.showToast({ title: '还没有总结历史', icon: 'none' })
-      return
     }
-    uni.showModal({
-      title: `总结历史（${records.length} 条）`,
-      content: records.map((item, index) => `${index + 1}. ${item.summary}`).join('\n\n'),
-      showCancel: false,
-      confirmText: '关闭'
-    })
   } catch (error) {
-    uni.showToast({ title: error.message || '历史加载失败', icon: 'none' })
+    if (!silent) uni.showToast({ title: error.message || '历史加载失败', icon: 'none' })
   }
+}
+
+async function showHistory() {
+  await loadHistory()
+  aiTab.value = 'preview'
+  aiOpen.value = true
+}
+
+function useHistory(item) {
+  aiDraft.value = item.summary || ''
+  aiTab.value = 'preview'
+}
+
+function closeAi() {
+  aiOpen.value = false
+}
+
+function replaceContent() {
+  if (!aiDraft.value.trim()) {
+    uni.showToast({ title: '摘要为空', icon: 'none' })
+    return
+  }
+  uni.showModal({
+    title: '替换正文',
+    content: form.content.trim()
+      ? '当前正文会被 AI 摘要覆盖，确定替换？'
+      : '用这段 AI 摘要作为正文？',
+    confirmText: '替换',
+    confirmColor: '#C96A3D',
+    success: (res) => {
+      if (!res.confirm) return
+      form.content = aiDraft.value
+      mode.value = 'edit'
+      closeAi()
+      uni.showToast({ title: '已替换，记得保存', icon: 'none' })
+    }
+  })
 }
 </script>
 
@@ -475,5 +552,161 @@ async function showHistory() {
   color: #a9aea7;
   font-size: 21rpx;
   margin-top: 28rpx;
+}
+
+/* AI 摘要面板 */
+.ai-mask {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 20;
+  background: rgba(16, 24, 32, 0.58);
+  display: flex;
+  align-items: flex-end;
+}
+
+.ai-sheet {
+  width: 100%;
+  max-height: 88vh;
+  background: #fffdf8;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 32rpx 30rpx 42rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+}
+
+.ai-sheet-kicker {
+  display: block;
+  color: #c96a3d;
+  font-size: 20rpx;
+  letter-spacing: 2rpx;
+  margin-bottom: 6rpx;
+}
+
+.ai-sheet-title {
+  display: block;
+  color: #18212b;
+  font-size: 36rpx;
+  font-weight: 700;
+}
+
+.ai-close {
+  color: #8a918b;
+  font-size: 44rpx;
+  line-height: 1;
+  padding: 0 6rpx;
+}
+
+.ai-tabs {
+  display: flex;
+  gap: 10rpx;
+  padding: 6rpx;
+  border-radius: 10rpx;
+  background: #ede5d5;
+  margin-bottom: 18rpx;
+}
+
+.ai-tab {
+  flex: 1;
+  text-align: center;
+  padding: 12rpx 0;
+  border-radius: 8rpx;
+  color: #6b746f;
+  font-size: 23rpx;
+}
+
+.ai-tab.active {
+  background: #18212b;
+  color: #f6f1e6;
+}
+
+.ai-sheet-body {
+  height: 560rpx;
+  padding: 22rpx;
+  border-radius: 14rpx;
+  background: #f6f1e6;
+  border: 1rpx solid #e4dccb;
+  box-sizing: border-box;
+}
+
+.ai-textarea {
+  width: 100%;
+  height: 500rpx;
+  color: #18212b;
+  font-size: 27rpx;
+  line-height: 1.75;
+}
+
+.ai-history {
+  margin-top: 26rpx;
+  padding-top: 18rpx;
+  border-top: 1rpx solid #d8cfbe;
+}
+
+.ai-history-title {
+  display: block;
+  color: #c96a3d;
+  font-size: 22rpx;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+}
+
+.history-item {
+  padding: 14rpx 0;
+  border-bottom: 1rpx solid #e4dccb;
+}
+
+.history-time {
+  display: block;
+  color: #a9aea7;
+  font-size: 20rpx;
+  margin-bottom: 4rpx;
+}
+
+.history-text {
+  display: block;
+  color: #6b746f;
+  font-size: 23rpx;
+  line-height: 1.6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.ai-sheet-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.ai-sheet-actions .ghost,
+.ai-sheet-actions .primary {
+  flex: 1;
+  height: 82rpx;
+  line-height: 82rpx;
+  border-radius: 12rpx;
+  font-size: 27rpx;
+  margin: 0;
+}
+
+.ai-sheet-actions .ghost {
+  background: #ede5d5;
+  color: #18212b;
+}
+
+.ai-sheet-actions .primary {
+  background: #18212b;
+  color: #f6f1e6;
 }
 </style>
