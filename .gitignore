@@ -5,6 +5,13 @@ frontend/note/.env
 frontend/note/.env.*
 !frontend/note/.env.example
 
+# ---------- uni-app ----------
+frontend/note-app/node_modules/
+frontend/note-app/dist/
+frontend/note-app/unpackage/
+frontend/note-app/.env.local
+frontend/note-app/.env.*.local
+
 # ---------- Java / Maven ----------
 server/**/target/
 *.class

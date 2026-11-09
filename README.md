@@ -210,6 +210,12 @@ note/
 │   ├── dist/
 │   ├── vite.config.mjs
 │   └── package.json
+├── frontend/note-app/             # uni-app 端（H5 / 微信小程序）
+│   ├── src/pages/                 # 登录 / 注册 / 笔记 / 我的
+│   ├── src/api/                   # uni.request 封装
+│   ├── src/stores/user.js
+│   ├── vite.config.js
+│   └── package.json
 ├── server/
 │   ├── src/main/java/org/example/cipherws/note/
 │   │   ├── NoteApplication.java   # 唯一启动类
@@ -436,6 +442,18 @@ npm run build
 
 产物在 `frontend/note/dist/`。
 
+### 构建 uni-app 端
+
+```bash
+cd frontend/note-app
+npm install
+npm run dev:h5      # H5 开发，默认 5174
+npm run build:h5    # H5 构建
+npm run build:mp-weixin  # 微信小程序，导入 dist/build/mp-weixin
+```
+
+H5 开发时 `/api` 由 Vite 代理到 8084；小程序端用 `VITE_API_BASE_URL` 指向后端地址。详见 [frontend/note-app/README.md](frontend/note-app/README.md)。
+
 ### 启动后端
 
 ```powershell
@@ -551,7 +569,8 @@ MySQL 不会自动安装，需要预先安装 MySQL 8。
 - [docs/答辩问题与回答.md](docs/答辩问题与回答.md)：答辩问答、请求链路与核心代码讲解
 - [docs/需求文档.md](docs/需求文档.md)：功能需求
 - [deploy/README.md](deploy/README.md)：一键脚本说明
-- [frontend/note/README.md](frontend/note/README.md)：前端说明
+- [frontend/note/README.md](frontend/note/README.md)：Web 端说明
+- [frontend/note-app/README.md](frontend/note-app/README.md)：uni-app 端说明（H5 / 微信小程序）
 - [server/sql/note-schema.sql](server/sql/note-schema.sql)：建表与种子数据
 - [server/pom.xml](server/pom.xml)：后端依赖与构建配置
 - [server/src/main/java/org/example/cipherws/note/NoteApplication.java](server/src/main/java/org/example/cipherws/note/NoteApplication.java)：单体启动类
