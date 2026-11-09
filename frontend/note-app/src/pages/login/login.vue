@@ -2,7 +2,7 @@
   <view class="page">
     <!-- 品牌区 -->
     <view class="hero">
-      <view class="logo">N</view>
+      <image class="logo" src="/static/logo.png" mode="aspectFit" />
       <text class="kicker">CIPHERWS NOTE</text>
       <text class="title">把想法，留在纸上。</text>
       <text class="subtitle">登录后继续你的笔记、标签与 AI 总结。</text>
@@ -115,16 +115,10 @@ async function submit() {
 }
 
 .logo {
-  width: 56rpx;
-  height: 56rpx;
-  line-height: 56rpx;
-  text-align: center;
-  border-radius: 10rpx;
-  background: #18212b;
-  color: #f6f1e6;
-  font-family: Georgia, serif;
-  font-size: 32rpx;
-  font-weight: 700;
+  display: block;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 18rpx;
   margin-bottom: 36rpx;
 }
 

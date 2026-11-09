@@ -71,7 +71,15 @@ uni-app 的 **APK / IPA 原生打包需要 HBuilderX**（云打包或本地打�
 
 > 如果你希望我继续把 HBuilderX 的 `manifest.json` 打包参数（应用图标、启动图、Android 权限、iOS 证书）也配好，可以下一步继续。
 
-## H5 预览（仅调试）
+## 图标
+
+直接复用 Web 端 `frontend/note/public` 的品牌资源，不另做一套：
+
+- 登录页品牌图：`src/static/logo.png`
+- App 图标：`src/static/icon-180.png`（HBuilderX 打包时选它）
+- TabBar：从 Web `favicon.ico` 生成的 `tab-notes*.png` / `tab-profile*.png`
+
+## 运行 H5（仅调试）
 
 ```bash
 npm run dev:h5
