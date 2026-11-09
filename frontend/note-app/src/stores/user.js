@@ -5,13 +5,29 @@ import { clearToken, getToken, TOKEN_KEY } from '../api/request.js'
 
 const USER_KEY = 'note_user'
 
+function readStoredUser() {
+  try {
+    const value = uni.getStorageSync(USER_KEY)
+    if (typeof value === 'string' && value) {
+      try {
+        return JSON.parse(value)
+      } catch {
+        return null
+      }
+    }
+    return value || null
+  } catch {
+    return null
+  }
+}
+
 /**
  * 登录态：token 存本地存储，用户资料用 Pinia 缓存；
  * 刷新/重启后先读 token，再由页面调用 fetchProfile 恢复资料。
  */
 export const useUserStore = defineStore('user', () => {
   const token = ref(getToken())
-  const userInfo = ref(uni.getStorageSync(USER_KEY) || null)
+  const userInfo = ref(readStoredUser())
 
   const isLogin = computed(() => !!token.value)
   const isAdmin = computed(() => userInfo.value?.role === 'admin')

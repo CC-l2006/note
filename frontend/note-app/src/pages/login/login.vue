@@ -41,7 +41,7 @@
 
       <view class="links">
         <text class="link" @click="goRegister">没有账号？去注册</text>
-        <text class="link muted" @click="showDemo">演示账号</text>
+        <text class="link muted" @click="goForgot">忘记密码</text>
       </view>
     </view>
 
@@ -71,12 +71,8 @@ function goRegister() {
   uni.navigateTo({ url: '/pages/register/register' })
 }
 
-function showDemo() {
-  uni.showModal({
-    title: '演示账号',
-    content: '管理员：admin@cipherws.icu / admin123\n普通用户：demo@cipherws.icu / demo123',
-    showCancel: false
-  })
+function goForgot() {
+  uni.navigateTo({ url: '/pages/forgot/forgot' })
 }
 
 async function submit() {

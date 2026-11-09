@@ -17,11 +17,18 @@
 
 | 页面 | 路径 | 功能 |
 | --- | --- | --- |
-| 登录 | `pages/login/login` | 邮箱 + 密码登录 |
+| 登录 | `pages/login/login` | 邮箱 + 密码登录，不再提供演示账号入口 |
 | 注册 | `pages/register/register` | 邮箱验证码注册 |
-| 笔记 | `pages/notes/notes` | 列表、搜索、下拉刷新、上拉加载、长按删除 |
-| 编辑 | `pages/notes/edit` | 新建/编辑、标签选择、AI 总结 |
-| 我的 | `pages/profile/profile` | 资料、AI 额度、退出登录 |
+| 找回密码 | `pages/forgot/forgot` | 邮箱验证码重设密码 |
+| 笔记 | `pages/notes/notes` | 列表、搜索、文件夹/标签筛选、下拉刷新、上拉加载、移动、删除 |
+| 编辑 | `pages/notes/edit` | 新建/编辑、标签、文件夹、AI 总结与历史 |
+| 标签 | `pages/tags/tags` | 标签增删改查 |
+| 文件夹 | `pages/folders/folders` | 文件夹增删改查、按同名标签自动整理 |
+| 回收站 | `pages/trash/trash` | 恢复、永久删除、清空 |
+| 公告 | `pages/announcements/announcements` | 查看已发布公告 |
+| 我的 | `pages/profile/profile` | 资料、AI 额度、功能入口、退出登录 |
+| 账号设置 | `pages/settings/settings` | 资料、头像、改密、换绑邮箱 |
+| 管理后台 | `pages/admin/admin` | 用户、巡检、公告、AI 配置、日志、统计（仅 admin） |
 
 ## 手机端运行（主方式）
 
@@ -155,8 +162,15 @@ note-app/
 
 ## 当前范围
 
-已实现移动端核心闭环：
+已对齐 Web 端的主要功能：
 
-登录/注册 → 笔记列表 → 编辑/保存 → 标签 → AI 总结 → 个人中心。
+- 认证：登录、注册、找回密码
+- 笔记：列表、搜索、文件夹/标签筛选、新建/编辑、移动、软删除
+- 组织：标签 CRUD、文件夹 CRUD、自动整理
+- 回收站：恢复、永久删除、清空
+- AI：生成摘要、查看历史、额度
+- 账号：资料、头像、改密、换绑邮箱
+- 公告：查看
+- 管理后台（admin）：用户、巡检、公告、AI 配置、日志、统计
 
-文件夹管理、回收站、后台管理等复杂页面暂未搬到手机端，可继续按 `frontend/note` 的交互补齐。
+登录页不再放演示账号；正式账号由注册或后台创建。复杂交互（例如 Web 端的分栏编辑器、拖拽排序）已改为适合手机的上下布局。

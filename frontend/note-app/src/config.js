@@ -31,3 +31,11 @@ export const API_BASE_URL = String(
  * iOS 仍会校验证书，正式环境应换成受信任的 HTTPS 证书。
  */
 export const SSL_VERIFY = String(import.meta.env.VITE_SSL_VERIFY || 'true') !== 'false'
+
+/** 头像等后端相对路径转成 App 可访问的完整 URL */
+export function resolveAssetUrl(value) {
+  if (!value) return ''
+  if (/^https?:\/\//i.test(value)) return value
+  if (!API_BASE_URL) return value
+  return `${API_BASE_URL}${value.startsWith('/') ? value : `/${value}`}`
+}

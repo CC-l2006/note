@@ -1,7 +1,8 @@
 <template>
   <view class="page">
     <view class="profile-head">
-      <view class="avatar">{{ initial }}</view>
+      <image v-if="userStore.userInfo?.avatar" class="avatar avatar--img" :src="avatarSrc" mode="aspectFill" />
+      <view v-else class="avatar">{{ initial }}</view>
       <view class="who">
         <text class="name">{{ userStore.displayName }}</text>
         <text class="email">{{ userStore.userInfo?.email || '未绑定邮箱' }}</text>
@@ -20,6 +21,30 @@
     <view class="menu">
       <view class="menu-item" hover-class="menu-item--active" @click="goNotes">
         <text class="menu-title">我的笔记</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" hover-class="menu-item--active" @click="goPage('/pages/tags/tags')">
+        <text class="menu-title">标签管理</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" hover-class="menu-item--active" @click="goPage('/pages/folders/folders')">
+        <text class="menu-title">文件夹</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" hover-class="menu-item--active" @click="goPage('/pages/trash/trash')">
+        <text class="menu-title">回收站</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" hover-class="menu-item--active" @click="goPage('/pages/announcements/announcements')">
+        <text class="menu-title">公告</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" hover-class="menu-item--active" @click="goPage('/pages/settings/settings')">
+        <text class="menu-title">账号设置</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view v-if="userStore.isAdmin" class="menu-item admin" hover-class="menu-item--active" @click="goPage('/pages/admin/admin')">
+        <text class="menu-title">管理后台</text>
         <text class="menu-arrow">›</text>
       </view>
       <view class="menu-item" hover-class="menu-item--active" @click="about">
@@ -41,11 +66,13 @@ import { computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { useUserStore } from '../../stores/user.js'
 import { getToken } from '../../api/request.js'
+import { resolveAssetUrl } from '../../config.js'
 
 const userStore = useUserStore()
 
 const initial = computed(() => (userStore.displayName || 'N').slice(0, 1).toUpperCase())
 const roleText = computed(() => (userStore.isAdmin ? '管理员' : '普通用户'))
+const avatarSrc = computed(() => resolveAssetUrl(userStore.userInfo?.avatar))
 
 onShow(async () => {
   if (!getToken()) {
@@ -65,6 +92,10 @@ onShow(async () => {
 
 function goNotes() {
   uni.switchTab({ url: '/pages/notes/notes' })
+}
+
+function goPage(url) {
+  uni.navigateTo({ url })
 }
 
 function about() {
@@ -117,6 +148,11 @@ function logout() {
   font-family: Georgia, serif;
   font-size: 48rpx;
   font-weight: 700;
+}
+
+.avatar--img {
+  display: block;
+  background: #ede5d5;
 }
 
 .who {

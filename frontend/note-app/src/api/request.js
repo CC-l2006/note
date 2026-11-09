@@ -91,4 +91,43 @@ export function request(path, { method = 'GET', data, params } = {}) {
   })
 }
 
+/**
+ * 文件上传（头像等）。不要手写 Content-Type，交给 uni.uploadFile 自动带 boundary。
+ */
+export function upload(path, filePath, name = 'file') {
+  const header = {}
+  const token = getToken()
+  if (token) header.Authorization = `Bearer ${token}`
+
+  return new Promise((resolve, reject) => {
+    uni.uploadFile({
+      url: `${BASE}${API_PREFIX}${path}`,
+      filePath,
+      name,
+      header,
+      timeout: 60000,
+      success: (res) => {
+        let body
+        try {
+          body = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+        } catch {
+          reject(new ApiError('上传响应不是合法 JSON'))
+          return
+        }
+        if (res.statusCode === 401) {
+          clearToken()
+          reject(new ApiError('登录已失效，请重新登录', 401))
+          return
+        }
+        if (res.statusCode !== 200 || !body || body.success !== true) {
+          reject(new ApiError(body?.errMessage || '上传失败', res.statusCode))
+          return
+        }
+        resolve({ data: body.data })
+      },
+      fail: () => reject(new ApiError('上传失败，请检查网络'))
+    })
+  })
+}
+
 export default request

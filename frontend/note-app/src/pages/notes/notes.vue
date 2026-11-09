@@ -24,6 +24,23 @@
       <text class="search-btn" @click="reload">搜索</text>
     </view>
 
+    <!-- 快捷入口 -->
+    <view class="quick">
+      <text class="quick-item" @click="goPage('/pages/tags/tags')">标签</text>
+      <text class="quick-item" @click="goPage('/pages/folders/folders')">文件夹</text>
+      <text class="quick-item" @click="goPage('/pages/trash/trash')">回收站</text>
+      <text class="quick-item" @click="goPage('/pages/announcements/announcements')">公告</text>
+    </view>
+
+    <!-- 筛选 -->
+    <view class="filter-row">
+      <text class="filter" :class="{ active: !folderId && !tagId && !unfiled }" @click="clearFilter">全部</text>
+      <text class="filter" :class="{ active: unfiled }" @click="setUnfiled">未分类</text>
+      <text class="filter" @click="pickFolder">文件夹 ▾</text>
+      <text class="filter" @click="pickTag">标签 ▾</text>
+      <text class="filter-label">{{ filterLabel }}</text>
+    </view>
+
     <!-- 笔记列表 -->
     <view v-if="list.length" class="list">
       <view
@@ -43,7 +60,10 @@
           <view class="tags">
             <text v-for="tag in note.tags || []" :key="tag.id" class="tag">#{{ tag.name }}</text>
           </view>
-          <text class="delete" @click.stop="removeNote(note)">删除</text>
+          <view class="note-actions">
+            <text class="delete" @click.stop="moveNote(note)">移动</text>
+            <text class="delete" @click.stop="removeNote(note)">删除</text>
+          </view>
         </view>
       </view>
     </view>
@@ -67,9 +87,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
-import { noteApi } from '../../api/index.js'
+import { folderApi, noteApi, tagApi } from '../../api/index.js'
 import { getToken } from '../../api/request.js'
 
 const list = ref([])
@@ -79,6 +99,18 @@ const size = 20
 const keyword = ref('')
 const loading = ref(false)
 const finished = ref(false)
+const folders = ref([])
+const tags = ref([])
+const folderId = ref(null)
+const tagId = ref(null)
+const unfiled = ref(false)
+
+const filterLabel = computed(() => {
+  if (unfiled.value) return '当前：未分类'
+  if (folderId.value) return `当前：${folders.value.find((f) => f.id === folderId.value)?.name || '文件夹'}`
+  if (tagId.value) return `当前：#${tags.value.find((t) => t.id === tagId.value)?.name || '标签'}`
+  return '当前：全部'
+})
 
 function formatTime(value) {
   if (!value) return ''
@@ -108,7 +140,10 @@ async function load(reset = false) {
     const { data, total: count } = await noteApi.list({
       page: page.value,
       size,
-      keyword: keyword.value.trim() || undefined
+      keyword: keyword.value.trim() || undefined,
+      folderId: folderId.value || undefined,
+      tagIds: tagId.value ? [tagId.value] : undefined,
+      unfiled: unfiled.value || undefined
     })
     const rows = Array.isArray(data) ? data : []
     list.value = reset ? rows : [...list.value, ...rows]
@@ -129,6 +164,94 @@ async function load(reset = false) {
 
 function reload() {
   load(true)
+}
+
+async function loadMeta() {
+  try {
+    const [folderRes, tagRes] = await Promise.all([folderApi.list(), tagApi.list()])
+    folders.value = Array.isArray(folderRes.data) ? folderRes.data : []
+    tags.value = Array.isArray(tagRes.data) ? tagRes.data : []
+  } catch (error) {
+    console.warn('[note-app] load meta failed', error)
+  }
+}
+
+function clearFilter() {
+  folderId.value = null
+  tagId.value = null
+  unfiled.value = false
+  reload()
+}
+
+function setUnfiled() {
+  folderId.value = null
+  tagId.value = null
+  unfiled.value = true
+  reload()
+}
+
+function pickFolder() {
+  if (!folders.value.length) {
+    uni.showToast({ title: '还没有文件夹', icon: 'none' })
+    return
+  }
+  uni.showActionSheet({
+    itemList: ['全部文件夹', ...folders.value.map((f) => f.name)],
+    success: (res) => {
+      if (res.tapIndex === 0) {
+        folderId.value = null
+      } else {
+        folderId.value = folders.value[res.tapIndex - 1].id
+        unfiled.value = false
+      }
+      tagId.value = null
+      reload()
+    }
+  })
+}
+
+function pickTag() {
+  if (!tags.value.length) {
+    uni.showToast({ title: '还没有标签', icon: 'none' })
+    return
+  }
+  uni.showActionSheet({
+    itemList: ['全部标签', ...tags.value.map((t) => `#${t.name}`)],
+    success: (res) => {
+      if (res.tapIndex === 0) {
+        tagId.value = null
+      } else {
+        tagId.value = tags.value[res.tapIndex - 1].id
+        unfiled.value = false
+      }
+      folderId.value = null
+      reload()
+    }
+  })
+}
+
+function goPage(url) {
+  uni.navigateTo({ url })
+}
+
+function moveNote(note) {
+  if (!folders.value.length) {
+    uni.showToast({ title: '还没有文件夹', icon: 'none' })
+    return
+  }
+  uni.showActionSheet({
+    itemList: ['移到未分类', ...folders.value.map((f) => f.name)],
+    success: async (res) => {
+      const target = res.tapIndex === 0 ? null : folders.value[res.tapIndex - 1].id
+      try {
+        await noteApi.move(note.id, target)
+        uni.showToast({ title: '已移动', icon: 'success' })
+        reload()
+      } catch (error) {
+        uni.showToast({ title: error.message || '移动失败', icon: 'none' })
+      }
+    }
+  })
 }
 
 function createNote() {
@@ -163,6 +286,7 @@ onShow(() => {
     uni.reLaunch({ url: '/pages/login/login' })
     return
   }
+  loadMeta()
   reload()
 })
 
@@ -251,6 +375,45 @@ onReachBottom(() => load(false))
   padding: 18rpx 8rpx;
 }
 
+.quick {
+  display: flex;
+  gap: 18rpx;
+  margin-bottom: 16rpx;
+}
+
+.quick-item {
+  color: #2e6b66;
+  font-size: 23rpx;
+  padding: 8rpx 0;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12rpx;
+  margin-bottom: 24rpx;
+}
+
+.filter {
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+  background: #ede5d5;
+  color: #6b746f;
+  font-size: 21rpx;
+}
+
+.filter.active {
+  background: #18212b;
+  color: #f6f1e6;
+}
+
+.filter-label {
+  color: #a9aea7;
+  font-size: 20rpx;
+  margin-left: auto;
+}
+
 .list {
   display: flex;
   flex-direction: column;
@@ -330,6 +493,12 @@ onReachBottom(() => load(false))
   color: #c96a3d;
   font-size: 21rpx;
   padding: 6rpx 0 6rpx 20rpx;
+}
+
+.note-actions {
+  display: flex;
+  gap: 14rpx;
+  flex-shrink: 0;
 }
 
 .empty {

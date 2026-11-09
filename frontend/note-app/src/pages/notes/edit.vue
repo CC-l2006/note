@@ -41,7 +41,15 @@
           #{{ tag.name }}
         </text>
       </view>
-      <text v-else class="empty-tags">还没有标签，可在 Web 端创建。</text>
+      <text v-else class="empty-tags">还没有标签，可在“我的 → 标签管理”创建。</text>
+    </view>
+
+    <!-- 文件夹 -->
+    <view class="section">
+      <view class="section-head">
+        <text class="section-title">文件夹</text>
+        <text class="section-hint" @click="pickFolder">{{ folderLabel }} ›</text>
+      </view>
     </view>
 
     <!-- AI 总结：仅编辑已有笔记时可用 -->
@@ -50,7 +58,10 @@
         <text class="ai-title">AI 总结</text>
         <text class="ai-desc">把长笔记压缩成一段摘要</text>
       </view>
-      <button class="ai-btn" :loading="aiLoading" :disabled="aiLoading" @click="summarize">生成</button>
+      <view class="ai-actions">
+        <button class="ai-btn ghost-ai" @click="showHistory">历史</button>
+        <button class="ai-btn" :loading="aiLoading" :disabled="aiLoading" @click="summarize">生成</button>
+      </view>
     </view>
 
     <button class="save-btn" :loading="saving" :disabled="saving" @click="save">保存笔记</button>
@@ -59,22 +70,29 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { aiApi, noteApi, tagApi } from '../../api/index.js'
+import { aiApi, folderApi, noteApi, tagApi } from '../../api/index.js'
 
 const id = ref(null)
 const tags = ref([])
+const folders = ref([])
 const selectedTags = ref([])
+const folderId = ref(null)
 const saving = ref(false)
 const aiLoading = ref(false)
 const form = reactive({ title: '', content: '' })
+
+const folderLabel = computed(() => {
+  if (!folderId.value) return '未分类'
+  return folders.value.find((item) => item.id === folderId.value)?.name || '未分类'
+})
 
 onLoad(async (options) => {
   id.value = options?.id ? Number(options.id) : null
   uni.setNavigationBarTitle({ title: id.value ? '编辑笔记' : '新建笔记' })
 
-  await loadTags()
+  await Promise.all([loadTags(), loadFolders()])
   if (id.value) await loadDetail()
 })
 
@@ -88,12 +106,35 @@ async function loadTags() {
   }
 }
 
+async function loadFolders() {
+  try {
+    const { data } = await folderApi.list()
+    folders.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.warn('[note-app] load folders failed', error)
+  }
+}
+
+function pickFolder() {
+  if (!folders.value.length) {
+    uni.showToast({ title: '还没有文件夹', icon: 'none' })
+    return
+  }
+  uni.showActionSheet({
+    itemList: ['未分类', ...folders.value.map((item) => item.name)],
+    success: (res) => {
+      folderId.value = res.tapIndex === 0 ? null : folders.value[res.tapIndex - 1].id
+    }
+  })
+}
+
 async function loadDetail() {
   try {
     const { data } = await noteApi.detail(id.value)
     form.title = data.title || ''
     form.content = data.content || ''
     selectedTags.value = (data.tags || []).map((tag) => tag.id)
+    folderId.value = data.folderId || null
   } catch (error) {
     uni.showToast({ title: error.message || '笔记加载失败', icon: 'none' })
   }
@@ -118,8 +159,14 @@ async function save() {
       content: form.content,
       tagIds: selectedTags.value
     }
-    if (id.value) await noteApi.update(id.value, body)
-    else await noteApi.create(body)
+    let noteId = id.value
+    if (noteId) {
+      await noteApi.update(noteId, body)
+    } else {
+      const { data } = await noteApi.create(body)
+      noteId = data?.id
+    }
+    if (noteId) await noteApi.move(noteId, folderId.value)
 
     uni.showToast({ title: '保存成功', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 500)
@@ -144,6 +191,25 @@ async function summarize() {
     uni.showToast({ title: error.message || 'AI 总结失败', icon: 'none' })
   } finally {
     aiLoading.value = false
+  }
+}
+
+async function showHistory() {
+  try {
+    const { data } = await aiApi.history(id.value)
+    const records = Array.isArray(data) ? data : []
+    if (!records.length) {
+      uni.showToast({ title: '还没有总结历史', icon: 'none' })
+      return
+    }
+    uni.showModal({
+      title: `总结历史（${records.length} 条）`,
+      content: records.map((item, index) => `${index + 1}. ${item.summary}`).join('\n\n'),
+      showCancel: false,
+      confirmText: '关闭'
+    })
+  } catch (error) {
+    uni.showToast({ title: error.message || '历史加载失败', icon: 'none' })
   }
 }
 </script>
@@ -284,6 +350,16 @@ async function summarize() {
   color: #fffdf8;
   font-size: 23rpx;
   margin: 0;
+}
+
+.ai-actions {
+  display: flex;
+  gap: 12rpx;
+}
+
+.ghost-ai {
+  background: #22313a;
+  color: #a9b8b6;
 }
 
 .save-btn {
