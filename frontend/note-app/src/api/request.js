@@ -5,7 +5,9 @@
  * 这样页面里只写 /auth/login、/notes 这类业务路径，不重复处理 baseURL、token 和错误。
  */
 
-const BASE = String(import.meta.env.VITE_API_BASE_URL || '')
+import { API_BASE_URL } from '../config.js'
+
+const BASE = API_BASE_URL
 const API_PREFIX = '/api'
 export const TOKEN_KEY = 'note_token'
 

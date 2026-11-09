@@ -210,7 +210,7 @@ note/
 │   ├── dist/
 │   ├── vite.config.mjs
 │   └── package.json
-├── frontend/note-app/             # uni-app 端（H5 / 微信小程序）
+├── frontend/note-app/             # uni-app 手机端（Android / iOS）
 │   ├── src/pages/                 # 登录 / 注册 / 笔记 / 我的
 │   ├── src/api/                   # uni.request 封装
 │   ├── src/stores/user.js
@@ -442,17 +442,22 @@ npm run build
 
 产物在 `frontend/note/dist/`。
 
-### 构建 uni-app 端
+### 构建 uni-app 手机端
 
 ```bash
 cd frontend/note-app
 npm install
-npm run dev:h5      # H5 开发，默认 5174
-npm run build:h5    # H5 构建
-npm run build:mp-weixin  # 微信小程序，导入 dist/build/mp-weixin
+npm run build:app   # 生成 App 资源，dist/build/app，用 HBuilderX 打包 APK/IPA
+npm run dev:app     # App 开发调试
 ```
 
-H5 开发时 `/api` 由 Vite 代理到 8084；小程序端用 `VITE_API_BASE_URL` 指向后端地址。详见 [frontend/note-app/README.md](frontend/note-app/README.md)。
+H5 仅作为快速预览：
+
+```bash
+npm run dev:h5      # 默认 5174，走 Vite 代理
+```
+
+手机 App 没有 Vite 代理，必须用 `VITE_API_BASE_URL` 指向电脑局域网 IP 或线上域名；H5 调试可留空。详见 [frontend/note-app/README.md](frontend/note-app/README.md)。
 
 ### 启动后端
 
@@ -570,7 +575,7 @@ MySQL 不会自动安装，需要预先安装 MySQL 8。
 - [docs/需求文档.md](docs/需求文档.md)：功能需求
 - [deploy/README.md](deploy/README.md)：一键脚本说明
 - [frontend/note/README.md](frontend/note/README.md)：Web 端说明
-- [frontend/note-app/README.md](frontend/note-app/README.md)：uni-app 端说明（H5 / 微信小程序）
+- [frontend/note-app/README.md](frontend/note-app/README.md)：uni-app 手机端说明（Android / iOS）
 - [server/sql/note-schema.sql](server/sql/note-schema.sql)：建表与种子数据
 - [server/pom.xml](server/pom.xml)：后端依赖与构建配置
 - [server/src/main/java/org/example/cipherws/note/NoteApplication.java](server/src/main/java/org/example/cipherws/note/NoteApplication.java)：单体启动类
