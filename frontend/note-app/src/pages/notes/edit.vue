@@ -2,7 +2,10 @@
   <view class="page">
     <view class="meta">
       <text class="kicker">{{ id ? 'EDIT NOTE' : 'NEW NOTE' }}</text>
-      <text class="status">{{ saving ? '保存中…' : '仅自己可见' }}</text>
+      <view class="mode-switch">
+        <text class="mode" :class="{ active: mode === 'edit' }" @click="mode = 'edit'">编辑</text>
+        <text class="mode" :class="{ active: mode === 'preview' }" @click="mode = 'preview'">预览</text>
+      </view>
     </view>
 
     <input
@@ -15,14 +18,24 @@
     />
 
     <textarea
+      v-if="mode === 'edit'"
       v-model="form.content"
       class="content-input"
-      placeholder="写下此刻的想法…"
+      placeholder="写下此刻的想法，支持 Markdown…"
       placeholder-class="placeholder"
       :maxlength="-1"
       :auto-height="true"
       :show-confirm-bar="false"
     />
+
+    <view v-else class="preview-shell">
+      <!-- #ifdef H5 -->
+      <view class="md-preview" v-html="previewHtml"></view>
+      <!-- #endif -->
+      <!-- #ifndef H5 -->
+      <rich-text class="md-preview" :nodes="previewHtml"></rich-text>
+      <!-- #endif -->
+    </view>
 
     <!-- 标签 -->
     <view class="section">
@@ -73,6 +86,7 @@
 import { computed, reactive, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { aiApi, folderApi, noteApi, tagApi } from '../../api/index.js'
+import { renderMarkdown } from '../../utils/markdown.js'
 
 const id = ref(null)
 const tags = ref([])
@@ -81,7 +95,10 @@ const selectedTags = ref([])
 const folderId = ref(null)
 const saving = ref(false)
 const aiLoading = ref(false)
+const mode = ref('edit')
 const form = reactive({ title: '', content: '' })
+
+const previewHtml = computed(() => renderMarkdown(form.content))
 
 const folderLabel = computed(() => {
   if (!folderId.value) return '未分类'
@@ -239,6 +256,84 @@ async function showHistory() {
 .status {
   color: #a9aea7;
   font-size: 21rpx;
+}
+
+.mode-switch {
+  display: flex;
+  border: 1rpx solid #d8cfbe;
+  border-radius: 9rpx;
+  overflow: hidden;
+}
+
+.mode {
+  padding: 8rpx 16rpx;
+  color: #6b746f;
+  font-size: 21rpx;
+  background: #fffdf8;
+}
+
+.mode.active {
+  background: #18212b;
+  color: #f6f1e6;
+}
+
+.preview-shell {
+  min-height: 460rpx;
+  padding: 26rpx 24rpx;
+  border-radius: 16rpx;
+  background: #fffdf8;
+  border: 1rpx solid #d8cfbe;
+}
+
+.md-preview {
+  font-size: 29rpx;
+  line-height: 1.85;
+  color: #3f4a45;
+  word-break: break-word;
+}
+
+/* H5 v-html 下的兜底样式；App rich-text 已在 markdown.js 写内联样式 */
+.md-preview h1,
+.md-preview h2,
+.md-preview h3,
+.md-preview h4 {
+  color: #18212b;
+  font-weight: 700;
+}
+
+.md-preview p {
+  margin: 10rpx 0;
+}
+
+.md-preview blockquote {
+  border-left: 6rpx solid #c96a3d;
+  background: #f1eadb;
+  padding: 16rpx 20rpx;
+  margin: 16rpx 0;
+}
+
+.md-preview ul,
+.md-preview ol {
+  padding-left: 36rpx;
+  margin: 10rpx 0;
+}
+
+.md-preview code {
+  background: #ede5d5;
+  padding: 2rpx 8rpx;
+  border-radius: 6rpx;
+}
+
+.md-preview pre {
+  background: #18212b;
+  color: #f6f1e6;
+  padding: 20rpx;
+  border-radius: 10rpx;
+  overflow-x: auto;
+}
+
+.md-preview a {
+  color: #2e6b66;
 }
 
 .title-input {

@@ -91,6 +91,7 @@ import { computed, ref } from 'vue'
 import { onPullDownRefresh, onReachBottom, onShow } from '@dcloudio/uni-app'
 import { folderApi, noteApi, tagApi } from '../../api/index.js'
 import { getToken } from '../../api/request.js'
+import { markdownToText } from '../../utils/markdown.js'
 
 const list = ref([])
 const total = ref(0)
@@ -121,7 +122,7 @@ function formatTime(value) {
 }
 
 function snippet(content) {
-  const text = String(content || '').replace(/\s+/g, ' ').trim()
+  const text = markdownToText(content)
   if (!text) return '空白笔记'
   return text.length > 90 ? `${text.slice(0, 90)}…` : text
 }
