@@ -102,7 +102,16 @@ iOS 仍会校验证书，需要给 frp 换一张受信任的 HTTPS 证书，或�
 npm run dev:h5
 ```
 
-默认 `http://localhost:5174`。H5 模式下 `/api` 会由 Vite 代理到 `http://127.0.0.1:8084`，只用于快速看页面，不是最终交付形态。
+默认 `http://localhost:5174`。H5 模式下 `/api` 由 Vite 代理到远程 `https://frp-box.com:64456`，只用于快速看页面，不是最终交付形态。
+
+如果要用本地后端调 H5，启动前设置：
+
+```bash
+set VITE_PROXY_TARGET=http://127.0.0.1:8084
+npm run dev:h5
+```
+
+注意：改了 `vite.config.js` 后必须重启 dev server，HBuilderX 里要“重新运行”，只刷新页面不会生效。
 
 ## 微信小程序（可选）
 
@@ -158,7 +167,7 @@ note-app/
 
 - `frontend/note`：PC/H5 Web 版，端口 8002；
 - `frontend/note-app`：uni-app 手机 App，H5 预览端口 5174；
-- 两者共用同一个后端 8084 与 `/api` 契约。
+- 两者共用同一套 `/api` 契约；手机 App 默认走远程 frp，本地二次开发可切 8084。
 
 ## 当前范围
 
