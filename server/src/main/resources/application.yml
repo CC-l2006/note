@@ -1,0 +1,78 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  application:
+    name: note-app
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/CipherWS?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:root}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+
+  servlet:
+    multipart:
+      # 头像上限 2MB，request 给 3MB 留出表单开销
+      max-file-size: 2MB
+      max-request-size: 3MB
+
+  # 邮件：故意不写 host/port/username/password。
+  # 不写 host 时 Spring 不会创建 JavaMailSender，MailService 自动退化为把验证码写日志；
+  # 真要发信时用环境变量覆盖：
+  #   SPRING_MAIL_HOST=smtp.qq.com  SPRING_MAIL_PORT=465
+  #   SPRING_MAIL_USERNAME=you@qq.com  SPRING_MAIL_PASSWORD=授权码
+  #   NOTE_MAIL_ENABLED=true  MAIL_FROM=you@qq.com
+  mail:
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          ssl:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: org.example.cipherws.note.common.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+note:
+  mail:
+    enabled: ${NOTE_MAIL_ENABLED:false}
+    from: ${MAIL_FROM:}
+  upload:
+    # 相对路径相对进程工作目录；生产建议 NOTE_UPLOAD_DIR 给绝对路径
+    dir: ${NOTE_UPLOAD_DIR:./uploads}
+    max-bytes: 2097152
+  jwt:
+    # 单体应用只需要一个密钥；不设默认值，未配置时启动失败
+    secret: ${NOTE_JWT_SECRET}
+    ttl-seconds: ${NOTE_JWT_TTL:2592000}
+  ai:
+    # 第三方模型读超时（秒）
+    timeout-seconds: ${NOTE_AI_TIMEOUT:60}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+  health:
+    mail:
+      # 邮件暂时不可用不应该让整个服务健康检查变 DOWN
+      enabled: false
+
+logging:
+  level:
+    org.example.cipherws.note: INFO

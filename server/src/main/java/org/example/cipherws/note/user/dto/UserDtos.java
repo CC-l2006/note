@@ -1,0 +1,119 @@
+package org.example.cipherws.note.user.dto;
+
+/**
+ * 用户服务的数据传输对象。
+ *
+ * 全部用 record：只读、无需 setter，也不会有 Lombok 与 record 混用的歧义。
+ * 一个文件装完，避免为 6 个只有三四个字段的类各建一个文件。
+ *
+ * 职责边界：这里只定义「请求长什么样 / 响应长什么样」，不做任何校验；
+ * 格式与业务规则的判断都在 UserService，DTO 只做一次搬运。
+ * 关键约定：对外响应一律用 {@link UserVo}，实体 {@code NoteUser} 不直接返回。
+ */
+public final class UserDtos {
+
+    // 纯常量容器（只放嵌套 record），禁止实例化
+    private UserDtos() {
+    }
+
+    /**
+     * 注册：邮箱 + 验证码 + 密码 +（可选）昵称。
+     *
+     * 不再有 username —— 登录用邮箱，账号名由邮箱前缀自动生成，用户不用填，
+     * 也就不会出现「用户名被占用」这种注册失败。
+     *
+     * @param email    要注册的邮箱，必须先用它收一次验证码（purpose=register）
+     * @param code     6 位验证码
+     * @param password 密码，≥6 位
+     * @param nickname 昵称，可空（空则用邮箱前缀）
+     */
+    public record RegisterReq(String email, String code, String password, String nickname) {
+    }
+
+    /** 登录：邮箱 + 密码 */
+    public record LoginReq(String email, String password) {
+    }
+
+    /** 登录成功返回：令牌 + 用户信息 */
+    public record LoginRes(String token, UserVo user) {
+        // token：JWT 原文，前端自己保存，后续请求放进 Authorization 头
+        // user：登录后的用户视图，前端可直接渲染，省掉一次 profile 请求
+    }
+
+    /**
+     * 修改资料。
+     *
+     * **没有 email** —— 换邮箱必须走「发验证码 + 校验」，否则任何人都能
+     * 把自己的邮箱随便改成一个不属于自己的地址，然后拿它去重置别人的密码。
+     * header 里的 avatar 只用于「清空头像」（传空串），正常更换走上传接口。
+     */
+    public record ProfileReq(String nickname, String bio, String avatar) {
+    }
+
+    /**
+     * 修改密码：旧密码 + 新密码 + 邮箱验证码。
+     *
+     * 为什么要旧密码：万一有人临时用着你的电脑（或偷到会话），
+     * 光有邮箱验证码就能改密码等于把账号送出去，加一道旧密码成本很低。
+     */
+    public record PasswordReq(String oldPassword, String newPassword, String code) {
+    }
+
+    /** 找回密码：邮箱 + 验证码 + 新密码（前端会要求输两次，与这里比对） */
+    public record ResetPasswordReq(String email, String code, String password) {
+    }
+
+    /**
+     * 发送验证码。
+     *
+     * @param purpose register = 注册（邮箱必须**未**注册）
+     *                reset    = 找回密码（邮箱必须已注册）
+     *                bind_old = 更换邮箱第 1 步，验证**当前**邮箱（需要登录）
+     *                bind_new = 更换邮箱第 2 步，验证**新**邮箱（需要登录）
+     *                password = 修改密码，验证当前邮箱（需要登录）
+     *                null 按 reset 处理，兼容老调用方。
+     */
+    public record SendCodeReq(String email, String purpose) {
+    }
+
+    /**
+     * 发送验证码的结果。
+     *
+     * <p>这里**永远不返回验证码本身**。未配置 SMTP 时验证码只写服务端日志，
+     * 前端必须让人工从邮箱（或日志）抄录，避免任何人调接口就能拿到码。</p>
+     *
+     * @param cooldown 距下次可发送的秒数，前端拿它做倒计时
+     */
+    public record SendCodeRes(String hint, int cooldown) {
+    }
+
+    /** 更换绑定邮箱第 2 步：新邮箱 + 新邮箱收到的验证码 */
+    public record BindEmailReq(String email, String code) {
+    }
+
+    /** 只带一个验证码的请求（验证旧邮箱、改密码前置校验等） */
+    public record CodeOnlyReq(String code) {
+        // code：发到当前邮箱的 6 位验证码，由前端原样回传
+    }
+
+    /**
+     * 对外的用户视图。
+     * ⚠️ 绝对不能有 password 字段 —— 这是整条链路上最容易被顺手加进去的地方。
+     */
+    public record UserVo(
+            Long id,
+            String username,
+            String nickname,
+            String email,
+            String role,
+            String avatar,
+            String bio,
+            Integer aiQuota,
+            Boolean enabled,
+            String createdAt) {
+        // 标识组：id 是内部主键；username 只是显示名，没有唯一约束，可能与别人重名
+        // 账号组：email 是登录标识；role / enabled 决定权限与能否登录
+        // 展示组：nickname / avatar / bio 是用户中心可编辑的内容，avatar 只允许站内路径
+        // 业务组：aiQuota 剩余 AI 次数；createdAt 为 ISO 8601 字符串，前端可直接 new Date()
+    }
+}

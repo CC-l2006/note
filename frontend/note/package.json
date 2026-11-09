@@ -1,0 +1,22 @@
+{
+  "name": "cipherws-note",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CipherWS 笔记系统前端 —— 在线写笔记 + AI 智能总结 + 后台管控",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "pinia": "^2.3.1",
+    "vue": "^3.5.13",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "@vue/compiler-sfc": "^3.5.13",
+    "vite": "^6.3.5"
+  }
+}

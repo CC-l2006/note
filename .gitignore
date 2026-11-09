@@ -1,0 +1,31 @@
+# ---------- 前端 ----------
+frontend/note/node_modules/
+frontend/note/dist/
+frontend/note/.env
+frontend/note/.env.*
+!frontend/note/.env.example
+
+# ---------- Java / Maven ----------
+server/**/target/
+*.class
+
+# ---------- 部署本地产物 ----------
+deploy/.tools/jdk-17/
+deploy/.tools/node/
+deploy/.tools/*.zip
+deploy/.tools/_tmp_*/
+deploy/.logs/
+deploy/note.env.local
+deploy/mail.env.local
+deploy/*.env.local
+
+# ---------- 运行时上传目录（头像等，不入库） ----------
+uploads/
+server/uploads/
+
+# ---------- IDE / OS ----------
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db

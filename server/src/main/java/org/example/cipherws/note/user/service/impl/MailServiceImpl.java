@@ -1,0 +1,119 @@
+package org.example.cipherws.note.user.service.impl;
+
+import org.example.cipherws.note.user.service.MailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+
+/**
+ * 邮件发送实现。
+ *
+ * 用 ObjectProvider 拿 JavaMailSender 而不是直接注入：Spring Boot 只有在
+ * {@code spring.mail.host} 配置了的时候才会创建这个 bean，直接注入会让
+ * 「没配邮箱」的环境启动失败 —— 而没配邮箱恰恰是最常见的本地开发状态。
+ *
+ * 边界：只负责「把给定的验证码写成邮件发出去」，不生成码、不做频控、不重试；
+ * 发送失败直接抛异常，由 UserService 决定回滚与提示文案。
+ */
+@Service
+public class MailServiceImpl implements MailService {
+
+    // 日志：发信成功与「走日志回退」都要留痕，方便定位配置问题
+    private static final Logger log = LoggerFactory.getLogger(MailServiceImpl.class);
+
+    // JavaMailSender 的延迟句柄：发送时才向容器要，拿不到就说明环境没配 SMTP
+    private final ObjectProvider<JavaMailSender> mailSenderProvider;
+
+    // 总开关：false 时无论 SMTP 配没配都只写日志（演示/测试环境用）
+    @Value("${note.mail.enabled:false}")
+    private boolean enabled;
+
+    // 发件人显示地址：留空则退回 SMTP 登录账号（多数邮箱要求两者一致，否则会被拒信）
+    @Value("${note.mail.from:}")
+    private String from;
+
+    // SMTP 登录账号：既用于判断「是否配置完整」，也作为发件人兜底
+    @Value("${spring.mail.username:}")
+    private String mailUsername;
+
+    // 构造器注入 Provider，真正的 JavaMailSender 每次发送时再取
+    public MailServiceImpl(ObjectProvider<JavaMailSender> mailSenderProvider) {
+        this.mailSenderProvider = mailSenderProvider;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        // 三个条件缺一不可：开关打开、有 host（决定 bean 是否存在）、有发件账号
+        return enabled
+                && mailSenderProvider.getIfAvailable() != null
+                && !mailUsername.isBlank();
+    }
+
+    @Override
+    public void sendCode(String to, String code, String purpose) {
+        // 每种用途的措辞都不同，别让用户在「注册」时收到一封「绑定邮箱」的邮件，
+        // 也别让「验证旧邮箱」和「验证新邮箱」看起来一样 —— 用户要能一眼分清
+        // 这封邮件是在确认哪个动作。
+        String subject;
+        String lead;
+        // 先按用途定标题与开头语，正文其余部分所有用途共用
+        switch (purpose == null ? "" : purpose) {
+            case "register":
+                subject = "【池禾笔记】注册验证码";
+                lead = "你正在注册池禾笔记账号，验证邮箱归属。";
+                break;
+            case "reset":
+                subject = "【池禾笔记】重置密码验证码";
+                lead = "你正在重置密码。";
+                break;
+            case "bind_old":
+                subject = "【池禾笔记】更换邮箱：验证当前邮箱";
+                lead = "你正在更换绑定邮箱，这是第 1 步：验证你当前的邮箱。\n"
+                        + "通过之后才能绑定新邮箱。";
+                break;
+            case "bind_new":
+                subject = "【池禾笔记】更换邮箱：验证新邮箱";
+                lead = "你正在更换绑定邮箱，这是第 2 步：验证这个新邮箱。";
+                break;
+            case "password":
+                subject = "【池禾笔记】修改密码验证码";
+                lead = "你正在修改登录密码，需要验证当前邮箱。";
+                break;
+            default:
+                // 老的 "bind" 之类，按绑定新邮箱处理
+                subject = "【池禾笔记】绑定邮箱验证码";
+                lead = "你正在为账号绑定这个邮箱。";
+                break;
+        }
+        // 正文模板：开头一句随用途变化，有效期与「不要转发」的提示固定
+        String text = """
+                %s
+
+                验证码：%s
+                有效期 5 分钟，请勿转发给他人。
+
+                如果不是你本人操作，忽略本邮件即可，你的账号不会有任何变化。
+                """.formatted(lead, code);
+
+        if (!isEnabled()) {
+            // 本地开发/演示：不发信，把验证码写日志。
+            // 用 WARN 级别，免得有人以为邮件真的发出去了。
+            log.warn("[note-user] 未配置 SMTP，验证码只写日志。to={} purpose={} code={}", to, purpose, code);
+            return;
+        }
+
+        // 真正发信：明文 SimpleMailMessage 足够，验证码邮件不需要 HTML 与附件
+        SimpleMailMessage msg = new SimpleMailMessage();
+        // from 优先用配置的显示地址；没配就用 SMTP 账号，避免被邮件服务商拒发
+        msg.setFrom(from.isBlank() ? mailUsername : from);
+        msg.setTo(to);
+        msg.setSubject(subject);
+        msg.setText(text);
+        mailSenderProvider.getObject().send(msg);
+        log.info("[note-user] 验证码邮件已发送 to={} purpose={}", to, purpose);
+    }
+}
