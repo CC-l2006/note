@@ -1,9 +1,9 @@
 {
   "name": "cipherws-note-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
-  "description": "CipherWS 笔记系统 uni-app 手机端（Android / iOS，兼 H5 调试）",
+  "description": "池禾笔记 uni-app 手机端（Android / iOS，兼 H5 调试）",
   "scripts": {
     "dev:app": "uni -p app",
     "build:app": "uni build -p app",

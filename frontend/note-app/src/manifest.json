@@ -1,9 +1,9 @@
 {
-  "name": "CipherWS 笔记",
+  "name": "池禾笔记",
   "appid": "__UNI__CIPHERWSNOTE",
-  "description": "CipherWS 笔记系统 uni-app 端",
-  "versionName": "1.0.0",
-  "versionCode": "100",
+  "description": "池禾笔记 uni-app 端",
+  "versionName": "1.0.1",
+  "versionCode": "101",
   "transformPx": false,
   "vueVersion": "3",
   "app-plus": {
@@ -53,7 +53,7 @@
     }
   },
   "h5": {
-    "title": "CipherWS 笔记",
+    "title": "池禾笔记",
     "router": {
       "mode": "hash"
     }

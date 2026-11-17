@@ -85,7 +85,7 @@
       </view>
     </view>
 
-    <text class="footer">CipherWS Note · 账号设置</text>
+    <text class="footer">池禾笔记 · 账号设置</text>
   </view>
 </template>
 

@@ -88,7 +88,10 @@ export function request(path, { method = 'GET', data, params } = {}) {
           reject(error)
         }
       },
-      fail: () => reject(new ApiError('网络请求失败，请检查连接'))
+      fail: (err) => {
+        const detail = err?.errMsg || ''
+        reject(new ApiError(detail ? `网络请求失败：${detail}` : '网络请求失败，请检查连接'))
+      }
     })
   })
 }
@@ -127,7 +130,10 @@ export function upload(path, filePath, name = 'file') {
         }
         resolve({ data: body.data })
       },
-      fail: () => reject(new ApiError('上传失败，请检查网络'))
+      fail: (err) => {
+        const detail = err?.errMsg || ''
+        reject(new ApiError(detail ? `上传失败：${detail}` : '上传失败，请检查网络'))
+      }
     })
   })
 }

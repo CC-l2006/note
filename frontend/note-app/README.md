@@ -1,4 +1,4 @@
-# CipherWS Note · uni-app 手机端
+# 池禾笔记 · uni-app 手机端
 
 这是 `frontend/note`（Vue 3 Web 端）之外新增的 **uni-app 手机 App**，不是 H5 网页端。
 
@@ -53,22 +53,24 @@
 
 ### 1. 后端地址
 
-默认直接使用已部署的公网后端：
+默认使用与网页同域的公网后端：
 
 ```text
-https://frp-box.com:64456
+https://note.cipherws.icu
 ```
 
-请求路径仍然是 `/api/...`，Nginx 会去掉 `/api` 前缀后转给后端。
+请求路径仍然是 `/api/...`，Nginx 会去掉 `/api` 前缀后转给 note-gateway。
+
+**不要默认直连 `https://frp-box.com:64456`**：那张证书不在系统信任链里，Android / iOS 的 App 会直接 TLS 握手失败。网页端能访问是因为走的是 `note.cipherws.icu` 的受信任证书。
 
 不需要本机再启动后端；只有本地二次开发时才需要起 8084。
 
 ### 2. 配置（可选）
 
-默认已经使用 `https://frp-box.com:64456`。如需覆盖，复制 `.env.example` 为 `.env.local`：
+默认已经使用 `https://note.cipherws.icu`。如需覆盖，复制 `.env.example` 为 `.env.local`：
 
 ```ini
-VITE_API_BASE_URL=https://frp-box.com:64456
+VITE_API_BASE_URL=https://note.cipherws.icu
 ```
 
 ### 3. 编译 App 资源
@@ -91,29 +93,66 @@ uni-app 的 **APK / IPA 原生打包需要 HBuilderX**（云打包或本地打�
 1. 用 HBuilderX 直接打开 `frontend/note-app`，选择“运行 → 运行到手机或模拟器”；
 2. 或把 `dist/build/app` 导入 HBuilderX，按 HBuilderX 的 App 打包流程生成 APK/IPA。
 
-> 如果你希望我继续把 HBuilderX 的 `manifest.json` 打包参数（应用图标、启动图、Android 权限、iOS 证书）也配好，可以下一步继续。
+### 为什么改了图标/名称，手机上还是旧的
+
+`.hbuilderx/launch.json` 现在用的是：
+
+```json
+"playground": "standard"
+```
+
+标准运行基座的 **桌面图标和名称由 HBuilderX 基座决定**，不会读取 `manifest.json` 里的应用图标和 `name`。所以“运行到手机”看到的是 HBuilderX/旧基座，不是最终 App。
+
+要让 `池禾笔记` 和自定义图标生效，必须：
+
+1. 在 HBuilderX 里用 **发行 → 原生 App-云打包**（或离线打包）生成 APK/IPA；
+2. 把 `manifest.json` 的 `appid` 换成真实的 DCloud AppID；
+3. 打包前删除旧的 `unpackage` 缓存；
+4. 手机先卸载旧 App，再安装新包；
+5. `versionCode` 已从 `100` 提到 `101`，用于强制覆盖旧版本。
+
+只改 `src/static/icons` 和 `manifest.json`，然后继续用标准基座“运行到手机”，图标和名称不会变。
 
 ### 关于 HTTPS 证书
 
-`frp-box.com:64456` 当前证书不在系统信任链里。Android 开发包可以临时设置：
+默认的 `https://note.cipherws.icu` 使用受信任证书，`VITE_SSL_VERIFY=true` 即可，Android 和 iOS 都不需要跳过校验。
+
+只有在临时直连自签名地址（例如 `https://frp-box.com:64456`）时，Android 开发包才需要：
 
 ```ini
 VITE_SSL_VERIFY=false
 ```
 
-让 `uni.request` 跳过证书校验（仅 App-Android 生效，且仅建议开发阶段使用）。
-
-iOS 仍会校验证书，需要给 frp 换一张受信任的 HTTPS 证书，或使用带正式证书的域名。
+该参数仅 App-Android 生效；iOS 仍会校验证书，所以正式包不要直连 frp，继续使用 `note.cipherws.icu`。
 
 ## 图标
 
-直接复用 Web 端 `frontend/note/public` 的品牌资源，不另做一套：
+App 桌面图标直接复用 Web 端 `frontend/note/public/icon-180.png`，保证和网页版一致：
 
-- 登录页品牌图：`src/static/logo.png`
-- App 桌面图标：`src/static/icon-180.png` 生成到 `src/static/icons/`，已在 `manifest.json` 的 `app-plus.distribute.icons` 中配置 Android / iOS / iPad 各尺寸
-- TabBar：从 Web `favicon.ico` 生成的 `tab-notes*.png` / `tab-profile*.png`
+- 登录页品牌图：`src/static/logo.png`（Web 端同一张）
+- App 桌面图标：`src/static/icons/*.png`，全部由 `public/icon-180.png` 生成
+- 浏览器图标：`src/static/favicon.ico`、`icon-180.png`、`icon-64.png`（Web 端原文件）
 
-所以 App 的登录页、桌面图标和底部 Tab 用的都是 Web 端同一套品牌图标。
+底部 TabBar 图标来自 [iconfont.cn](https://www.iconfont.cn/)：
+
+| 位置 | iconfont 图标 | 颜色 |
+| --- | --- | --- |
+| 笔记 | `11200571`「笔记」（线性 / 简约） | 未选中 `#8A918B`，选中 `#C96A3D` |
+| 我的 | `24737094`「我的」（线性 / 简约） | 未选中 `#8A918B`，选中 `#C96A3D` |
+
+生成后的文件：
+
+```text
+src/static/tab-notes.png
+src/static/tab-notes-active.png
+src/static/tab-profile.png
+src/static/tab-profile-active.png
+```
+
+四个文件都是 81×81 透明 PNG，路径保持不变，`pages.json` 不需要改。
+
+> 图标来自 iconfont.cn，正式分发前请按对应图标作者的授权说明确认商用/再分发许可。
+
 
 ## 运行 H5（仅调试）
 
@@ -121,7 +160,7 @@ iOS 仍会校验证书，需要给 frp 换一张受信任的 HTTPS 证书，或�
 npm run dev:h5
 ```
 
-默认 `http://localhost:5174`。H5 模式下 `/api` 由 Vite 代理到远程 `https://frp-box.com:64456`，只用于快速看页面，不是最终交付形态。
+默认 `http://localhost:5174`。H5 模式下 `/api` 由 Vite 代理到远程 `https://note.cipherws.icu`，只用于快速看页面，不是最终交付形态。
 
 如果要用本地后端调 H5，启动前设置：
 
@@ -143,10 +182,10 @@ npm run dev:mp-weixin
 ## 环境变量
 
 ```ini
-# 默认公网后端
-VITE_API_BASE_URL=https://frp-box.com:64456
+# 默认公网后端（与网页同域，证书受信任）
+VITE_API_BASE_URL=https://note.cipherws.icu
 
-# 仅 App-Android；开发阶段可跳过不受信任证书
+# 默认 true；只有直连自签名地址时才设 false
 VITE_SSL_VERIFY=true
 ```
 
@@ -177,16 +216,16 @@ note-app/
 
 ## 手机端注意事项
 
-- 默认后端是 `https://frp-box.com:64456`，请求路径为 `/api/...`。
-- 该地址当前证书不受系统信任：Android 开发包可设 `VITE_SSL_VERIFY=false`；iOS 需要受信任证书。
-- 正式环境建议给 frp 换正式 HTTPS 证书，不要长期关闭证书校验。
+- 默认后端是 `https://note.cipherws.icu`，请求路径为 `/api/...`。
+- 该域名证书受信任，Android / iOS 都不需要关闭证书校验。
+- 不要默认直连 `frp-box.com:64456`：自签名证书会让 App 报 TLS 握手失败。
 - 后端目前没有专门给 App 的 OAuth/刷新 token，仍复用 Web 端 JWT。
 
 ## 与 Web 端的关系
 
 - `frontend/note`：PC/H5 Web 版，端口 8002；
 - `frontend/note-app`：uni-app 手机 App，H5 预览端口 5174；
-- 两者共用同一套 `/api` 契约；手机 App 默认走远程 frp，本地二次开发可切 8084。
+- 两者共用同一套 `/api` 契约；手机 App 默认走 `note.cipherws.icu`，本地二次开发可切 8084。
 
 ## 当前范围
 

@@ -73,7 +73,7 @@
     </view>
 
     <button class="save-btn" :loading="saving" :disabled="saving" @click="save">保存笔记</button>
-    <text class="footer">CipherWS Note · {{ id ? '编辑' : '新建' }}</text>
+    <text class="footer">池禾笔记 · {{ id ? '编辑' : '新建' }}</text>
 
     <!-- AI 摘要面板 -->
     <view v-if="aiOpen" class="ai-mask" @click="closeAi">

@@ -48,7 +48,7 @@
         <text class="menu-arrow">›</text>
       </view>
       <view class="menu-item" hover-class="menu-item--active" @click="about">
-        <text class="menu-title">关于 CipherWS Note</text>
+        <text class="menu-title">关于池禾笔记</text>
         <text class="menu-arrow">›</text>
       </view>
       <view class="menu-item danger" hover-class="menu-item--active" @click="logout">
@@ -100,8 +100,8 @@ function goPage(url) {
 
 function about() {
   uni.showModal({
-    title: 'CipherWS Note',
-    content: '在线笔记 + AI 智能总结 + 后台管控\nuni-app 端 v1.0.0',
+    title: '池禾笔记',
+    content: '在线笔记 + AI 智能总结 + 后台管控\nuni-app 端 v1.0.1',
     showCancel: false
   })
 }

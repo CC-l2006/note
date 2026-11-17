@@ -3,7 +3,7 @@
     <!-- 品牌区 -->
     <view class="hero">
       <image class="logo" src="/static/logo.png" mode="aspectFit" />
-      <text class="kicker">CIPHERWS NOTE</text>
+      <text class="kicker">池禾笔记</text>
       <text class="title">把想法，留在纸上。</text>
       <text class="subtitle">登录后继续你的笔记、标签与 AI 总结。</text>
     </view>
@@ -45,7 +45,7 @@
       </view>
     </view>
 
-    <text class="footer">CipherWS Note · uni-app</text>
+    <text class="footer">池禾笔记 · uni-app</text>
   </view>
 </template>
 
